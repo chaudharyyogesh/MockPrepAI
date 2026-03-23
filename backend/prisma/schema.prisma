@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         String    @default("candidate")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+  resumes      Resume[]
+  profiles     Profile[]
+  interviews   Interview[]
+}
+
+model Resume {
+  id                    String   @id @default(uuid())
+  user                  User     @relation(fields: [userId], references: [id])
+  userId                String
+  fileUrl               String
+  originalFilename      String
+  parsedName            String?
+  parsedExperienceYears Int?
+  parsedSkills          Json?
+  parsedEducation       Json?
+  parsedProjects        Json?
+  rawParsedText         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  profiles              Profile[]
+}
+
+model Profile {
+  id              String   @id @default(uuid())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  primaryRole     String
+  experienceLevel String
+  targetCompanies Json?
+  techStack       Json?
+  currentResume   Resume?  @relation(fields: [currentResumeId], references: [id])
+  currentResumeId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  interviews      Interview[]
+}
+
+model Interview {
+  id                  String      @id @default(uuid())
+  user                User        @relation(fields: [userId], references: [id])
+  userId              String
+  profile             Profile     @relation(fields: [profileId], references: [id])
+  profileId           String
+  status              String
+  startTime           DateTime?
+  endTime             DateTime?
+  durationMinutes     Int
+  interviewDomain     String
+  experienceLevel     String
+  totalQuestionsPlanned Int
+  totalQuestionsAsked Int   @default(0)
+  aiModelUsed         String?
+  transcript          Json?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  questions           Question[]
+  responses           Response[]
+  evaluation          Evaluation?
+}
+
+model Question {
+  id                  String     @id @default(uuid())
+  interview           Interview  @relation(fields: [interviewId], references: [id])
+  interviewId         String
+  section             String
+  orderIndex          Int
+  text                String
+  followupToQuestion  Question?  @relation("Followup", fields: [followupToQuestionId], references: [id])
+  followupToQuestionId String?
+  followups           Question[] @relation("Followup")
+  createdAt           DateTime   @default(now())
+  responses           Response[]
+}
+
+model Response {
+  id              String     @id @default(uuid())
+  interview       Interview  @relation(fields: [interviewId], references: [id])
+  interviewId     String
+  question        Question   @relation(fields: [questionId], references: [id])
+  questionId      String
+  audioUrl        String?
+  transcript      String
+  durationSeconds Int?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  aiNotes         Json?
+  createdAt       DateTime   @default(now())
+}
+
+model Evaluation {
+  id                           String   @id @default(uuid())
+  interview                    Interview @relation(fields: [interviewId], references: [id])
+  interviewId                  String   @unique
+  overallScore                 Int
+  communicationScore           Int
+  technicalScore               Int
+  problemSolvingScore          Int
+  behavioralScore              Int
+  domainExpertiseScore         Int
+  confidenceScore              Int
+  communicationFeedback        String?
+  communicationImprovements    String?
+  technicalFeedback            String?
+  technicalImprovements        String?
+  problemSolvingFeedback       String?
+  problemSolvingImprovements   String?
+  behavioralFeedback           String?
+  behavioralImprovements       String?
+  domainExpertiseFeedback      String?
+  domainExpertiseImprovements  String?
+  confidenceFeedback           String?
+  confidenceImprovements       String?
+  strengths                    Json?
+  weaknesses                   Json?
+  overallImprovementSuggestions String?
+  createdAt                    DateTime @default(now())
+}
